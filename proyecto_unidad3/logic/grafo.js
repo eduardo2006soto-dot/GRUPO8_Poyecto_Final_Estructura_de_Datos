@@ -1,21 +1,40 @@
-// grafo.js — Estructura de datos Grafo + Haversine + Dijkstra
+// grafo.js — Estructura de datos Grafo + Haversine + Dijkstra + Búsqueda de Nodo Cercano
 
 class Grafo {
     constructor() {
-        this.nodos = {};
+        this.nodos = new Map(); // Usamos Map para mejor rendimiento y compatibilidad
     }
 
     agregarNodo(id, lat, lng) {
-        this.nodos[id] = {
+        this.nodos.set(id, {
             lat: lat,
             lng: lng,
-            vecinos: {}
-        };
+            vecinos: new Map()
+        });
     }
 
     agregarArista(idOrigen, idDestino, distancia) {
-        this.nodos[idOrigen].vecinos[idDestino] = distancia;
-        this.nodos[idDestino].vecinos[idOrigen] = distancia;
+        const nodoOrigen = this.nodos.get(idOrigen);
+        const nodoDestino = this.nodos.get(idDestino);
+        if (nodoOrigen && nodoDestino) {
+            nodoOrigen.vecinos.set(idDestino, distancia);
+            nodoDestino.vecinos.set(idOrigen, distancia);
+        }
+    }
+
+    // Método para encontrar el nodo más cercano basado en coordenadas (lat, lng)
+    nodoMasCercano(latTarget, lngTarget) {
+        let masCercano = null;
+        let menorDistancia = Infinity;
+
+        for (const [id, nodo] of this.nodos.entries()) {
+            const d = calcularDistancia(latTarget, lngTarget, nodo.lat, nodo.lng);
+            if (d < menorDistancia) {
+                menorDistancia = d;
+                masCercano = id;
+            }
+        }
+        return masCercano;
     }
 }
 
@@ -54,69 +73,13 @@ class ColaPrioridad {
     }
 }
 
-function ejecutarDijkstra(grafo, nodoInicio) {
-    let distancias = {};
-    let rutas = {};
-    let cola = new ColaPrioridad();
-
-    for (let nodo in grafo.nodos) {
-        distancias[nodo] = Infinity;
-        rutas[nodo] = null;
-    }
-    
-    distancias[nodoInicio] = 0;
-    cola.encolar(nodoInicio, 0);
-
-    while (!cola.estaVacia()) {
-        let nodoActual = cola.desencolar();
-        let vecinos = grafo.nodos[nodoActual].vecinos;
-
-        for (let vecino in vecinos) {
-            let pesoCalle = vecinos[vecino]; 
-            let distanciaCalculada = distancias[nodoActual] + pesoCalle;
-
-            if (distanciaCalculada < distancias[vecino]) {
-                distancias[vecino] = distanciaCalculada;
-                rutas[vecino] = nodoActual;
-                cola.encolar(vecino, distanciaCalculada);
-            }
-        }
-    }
-
-    console.log("Dijkstra ejecuto el analisis de rutas exitosamente.");
-    return { distancias, rutas };
-}
-
-// Red vial de prueba (Parque Central de Loja)
-let redVial = new Grafo();
-
-redVial.agregarNodo("Parque_Noroeste", -3.9926, -79.2047);
-redVial.agregarNodo("Parque_Noreste", -3.9926, -79.2035);
-redVial.agregarNodo("Parque_Suroeste", -3.9938, -79.2047);
-redVial.agregarNodo("Parque_Sureste", -3.9938, -79.2035);
-
-function conectarCalles(id1, id2) {
-    let nodo1 = redVial.nodos[id1];
-    let nodo2 = redVial.nodos[id2];
-    let distancia = calcularDistancia(nodo1.lat, nodo1.lng, nodo2.lat, nodo2.lng);
-    redVial.agregarArista(id1, id2, distancia);
-}
-
-conectarCalles("Parque_Noroeste", "Parque_Noreste");
-conectarCalles("Parque_Noreste", "Parque_Sureste");
-conectarCalles("Parque_Sureste", "Parque_Suroeste");
-conectarCalles("Parque_Suroeste", "Parque_Noroeste");
-
-console.log("Red de prueba estructurada con distancias calculadas.");
-
 // ==========================================
-// DIJKSTRA
-// Devuelve { distancias: Map(id -> metros), previos: Map(id -> id | null) }
-// Si se indica `destino`, se detiene en cuanto ese nodo queda definitivo.
+// DIJKSTRA (Con protección contra nodos indefinidos)
 // ==========================================
 function ejecutarDijkstra(grafo, nodoInicio, destino = null) {
-    if (!grafo.nodos.has(nodoInicio)) {
-        throw new Error(`Nodo de inicio inexistente: ${nodoInicio}`);
+    if (!nodoInicio || !grafo.nodos.has(nodoInicio)) {
+        console.warn(`Advertencia: Nodo de inicio no válido o indefinido (${nodoInicio}).`);
+        return { distancias: new Map(), previos: new Map() };
     }
 
     const distancias = new Map();
@@ -133,11 +96,13 @@ function ejecutarDijkstra(grafo, nodoInicio, destino = null) {
     while (!cola.estaVacia()) {
         const { elemento: actual, prioridad: distActual } = cola.desencolar();
 
-        // Entrada obsoleta: ya se encontro un camino mejor a este nodo
         if (distActual > distancias.get(actual)) continue;
         if (actual === destino) break;
 
-        for (const [vecino, pesoCalle] of grafo.nodos.get(actual).vecinos) {
+        const nodoActualObj = grafo.nodos.get(actual);
+        if (!nodoActualObj) continue;
+
+        for (const [vecino, pesoCalle] of nodoActualObj.vecinos.entries()) {
             const candidata = distActual + pesoCalle;
             if (candidata < distancias.get(vecino)) {
                 distancias.set(vecino, candidata);
@@ -150,7 +115,6 @@ function ejecutarDijkstra(grafo, nodoInicio, destino = null) {
     return { distancias, previos };
 }
 
-// Reconstruye el camino inicio -> destino como lista de ids (o null si no hay camino)
 function reconstruirRuta(previos, inicio, destino) {
     const camino = [];
     let actual = destino;
@@ -163,7 +127,7 @@ function reconstruirRuta(previos, inicio, destino) {
 }
 
 // ==========================================
-// UNION-FIND (para detectar islas desconectadas)
+// UNION-FIND
 // ==========================================
 class UnionFind {
     constructor(n) {
@@ -172,7 +136,7 @@ class UnionFind {
 
     buscar(x) {
         while (this.padre[x] !== x) {
-            this.padre[x] = this.padre[this.padre[x]]; // compresion de caminos
+            this.padre[x] = this.padre[this.padre[x]];
             x = this.padre[x];
         }
         return x;
@@ -188,12 +152,7 @@ class UnionFind {
 }
 
 // ==========================================
-// RED VIAL A PARTIR DE LAS RUTAS DE PATRULLAJE
-//   1. Cada punto de cada ruta es un nodo ("sector:indice").
-//   2. Puntos consecutivos de una ruta se conectan.
-//   3. Puntos de rutas distintas a <= umbralCruce metros se conectan (cruces).
-//   4. Si quedan islas desconectadas, se unen con el enlace mas corto posible
-//      ("puentes"), para que Dijkstra siempre encuentre camino.
+// RED VIAL
 // ==========================================
 function construirRedVial(sectores, umbralCruce = 30) {
     const grafo = new Grafo();
@@ -209,22 +168,29 @@ function construirRedVial(sectores, umbralCruce = 30) {
 
     sectores.forEach(function(sector, s) {
         for (let i = 1; i < sector.ruta.length; i++) {
-            grafo.conectar(`${s}:${i - 1}`, `${s}:${i}`);
+            const idOrigen = `${s}:${i - 1}`;
+            const idDestino = `${s}:${i}`;
+            const nodo1 = grafo.nodos.get(idOrigen);
+            const nodo2 = grafo.nodos.get(idDestino);
+            if (nodo1 && nodo2) {
+                const d = calcularDistancia(nodo1.lat, nodo1.lng, nodo2.lat, nodo2.lng);
+                grafo.agregarArista(idOrigen, idDestino, d);
+            }
         }
     });
 
     const n = ids.length;
     const indice = new Map(ids.map((id, i) => [id, i]));
     const nodos = ids.map(id => grafo.nodos.get(id));
-    const grados = umbralCruce / 111000; // metros -> grados de latitud (aprox.)
+    const grados = umbralCruce / 111000;
     const uf = new UnionFind(n);
 
-    // Las aristas de las rutas ya unen componentes
-    for (const [id, nodo] of grafo.nodos) {
-        for (const vecino of nodo.vecinos.keys()) uf.unir(indice.get(id), indice.get(vecino));
+    for (const [id, nodo] of grafo.nodos.entries()) {
+        for (const vecino of nodo.vecinos.keys()) {
+            uf.unir(indice.get(id), indice.get(vecino));
+        }
     }
 
-    // Cruces entre puntos cercanos (descarte rapido por latitud antes de Haversine)
     for (let i = 0; i < n; i++) {
         for (let j = i + 1; j < n; j++) {
             if (Math.abs(nodos[i].lat - nodos[j].lat) > grados) continue;
@@ -236,7 +202,6 @@ function construirRedVial(sectores, umbralCruce = 30) {
         }
     }
 
-    // Puentes: unir islas con la pareja de nodos mas cercana entre componentes distintas
     grafo.puentes = [];
     let componentes = new Set(ids.map((_, i) => uf.buscar(i))).size;
     while (componentes > 1) {
@@ -249,6 +214,7 @@ function construirRedVial(sectores, umbralCruce = 30) {
                 if (mejor === null || d < mejor.d) mejor = { i, j, d };
             }
         }
+        if (mejor === null) break;
         grafo.agregarArista(ids[mejor.i], ids[mejor.j], mejor.d);
         grafo.puentes.push({ desde: ids[mejor.i], hasta: ids[mejor.j], distancia: mejor.d });
         uf.unir(mejor.i, mejor.j);
@@ -258,7 +224,6 @@ function construirRedVial(sectores, umbralCruce = 30) {
     return grafo;
 }
 
-// Permite probar este archivo con Node sin afectar al navegador
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         calcularDistancia, Grafo, ColaPrioridad, ejecutarDijkstra,

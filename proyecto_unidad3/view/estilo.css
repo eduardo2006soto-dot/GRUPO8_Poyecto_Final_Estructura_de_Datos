@@ -1,4 +1,4 @@
-/* Quitamos margenes y dividimos la pantalla */
+/* Quitamos márgenes y dividimos la pantalla en dos columnas */
 body {
     margin: 0;
     display: flex;
@@ -6,7 +6,7 @@ body {
     font-family: Arial, sans-serif;
 }
 
-/* Diseno del panel izquierdo */
+/* Diseño del panel izquierdo (Panel ECU-911 y controles) */
 #panel-control {
     width: 30%;
     min-width: 260px;
@@ -17,13 +17,13 @@ body {
     overflow-y: auto;
 }
 
-/* Base comun de los botones */
+/* Base común de los botones de despacho */
 .boton {
     display: block;
     width: 100%;
     padding: 15px;
     margin-bottom: 10px;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
     color: white;
     border: none;
@@ -36,32 +36,30 @@ body {
     outline-offset: 2px;
 }
 
-/* Despacho por grafo (Dijkstra) */
+/* Colores específicos para los botones */
 #btn-alarma-grafo {
-    background-color: #ff9800;
+    background-color: #ff9800; /* Naranja para Dijkstra */
 }
 #btn-alarma-grafo:hover {
     background-color: #e68900;
 }
 
-/* Boton de alarma (OSRM) */
 #btn-alarma {
-    background-color: #d32f2f;
+    background-color: #d32f2f; /* Rojo para OSRM */
 }
 #btn-alarma:hover {
     background-color: #b71c1c;
 }
 
-/* Boton de reinicio */
 #btn-reiniciar {
-    background-color: #555;
+    background-color: #555; /* Gris para restablecer */
     margin-bottom: 20px;
 }
 #btn-reiniciar:hover {
     background-color: #444;
 }
 
-/* Diseno de la consola */
+/* Diseño de la consola de texto */
 #consola {
     background-color: #000;
     color: #0f0;
@@ -69,13 +67,14 @@ body {
     height: 200px;
     font-family: monospace;
     overflow-y: auto;
+    border-radius: 4px;
 }
 
 #consola .separador {
     margin-top: 10px;
 }
 
-/* Diseno del mapa */
+/* Diseño del mapa a la derecha (ocupa el 70% restante) */
 #mapa {
     width: 70%;
     height: 100%;

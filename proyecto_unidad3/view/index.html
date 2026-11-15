@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Estilos locales -->
+    <!-- Estilos locales (al estar en view/, apunta directamente a estilo.css) -->
     <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
@@ -28,7 +28,7 @@
     <!-- Panel derecho: El mapa -->
     <div id="mapa"></div>
 
-    <!-- Archivos de logica JavaScript (en orden de dependencia) -->
+    <!-- Archivos de lógica JavaScript (subiendo un nivel desde view/ hacia logic/) -->
     <script src="../logic/mapa.js"></script>
     <script src="../logic/sectores.js"></script>
     <script src="../logic/grafo.js"></script>
