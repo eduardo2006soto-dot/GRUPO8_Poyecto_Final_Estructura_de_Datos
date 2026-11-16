@@ -22,7 +22,8 @@ class Grafo {
         }
     }
 
-    // Método para encontrar el nodo más cercano basado en coordenadas (lat, lng)
+    // Nodo más cercano a (lat, lng): devuelve { id, distancia } en metros,
+    // o null si el grafo no tiene nodos.
     nodoMasCercano(latTarget, lngTarget) {
         let masCercano = null;
         let menorDistancia = Infinity;
@@ -34,7 +35,7 @@ class Grafo {
                 masCercano = id;
             }
         }
-        return masCercano;
+        return masCercano === null ? null : { id: masCercano, distancia: menorDistancia };
     }
 }
 
@@ -54,22 +55,66 @@ function calcularDistancia(lat1, lon1, lat2, lon2) {
     return radioTierra * c;
 }
 
+// Cola de prioridad implementada como min-heap binario (sin .sort()).
+// El hijo izquierdo de i está en 2i+1, el derecho en 2i+2 y el padre en (i-1)/2.
+// encolar y desencolar son O(log n).
 class ColaPrioridad {
     constructor() {
         this.elementos = [];
     }
 
     encolar(elemento, prioridad) {
-        this.elementos.push({elemento, prioridad});
-        this.elementos.sort((a, b) => a.prioridad - b.prioridad);
+        this.elementos.push({ elemento, prioridad });
+        this.subir(this.elementos.length - 1);
     }
 
+    // Devuelve { elemento, prioridad } con la menor prioridad, o undefined si está vacía.
     desencolar() {
-        return this.elementos.shift().elemento;
+        const heap = this.elementos;
+        if (heap.length === 0) return undefined;
+
+        const minimo = heap[0];
+        const ultimo = heap.pop();
+        if (heap.length > 0) {
+            heap[0] = ultimo;
+            this.bajar(0);
+        }
+        return minimo;
     }
 
     estaVacia() {
         return this.elementos.length === 0;
+    }
+
+    tamano() {
+        return this.elementos.length;
+    }
+
+    // Sube el nodo i mientras sea menor que su padre.
+    subir(i) {
+        const heap = this.elementos;
+        while (i > 0) {
+            const padre = (i - 1) >> 1;
+            if (heap[padre].prioridad <= heap[i].prioridad) break;
+            [heap[padre], heap[i]] = [heap[i], heap[padre]];
+            i = padre;
+        }
+    }
+
+    // Baja el nodo i mientras sea mayor que alguno de sus hijos.
+    bajar(i) {
+        const heap = this.elementos;
+        const n = heap.length;
+        while (true) {
+            const izq = 2 * i + 1;
+            const der = izq + 1;
+            let menor = i;
+            if (izq < n && heap[izq].prioridad < heap[menor].prioridad) menor = izq;
+            if (der < n && heap[der].prioridad < heap[menor].prioridad) menor = der;
+            if (menor === i) break;
+            [heap[menor], heap[i]] = [heap[i], heap[menor]];
+            i = menor;
+        }
     }
 }
 

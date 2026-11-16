@@ -73,7 +73,7 @@ function seleccionarUnidades(banco) {
     const nodoBanco = redVial.nodoMasCercano(banco.lat, banco.lng);
     const { distancias, previos } = ejecutarDijkstra(redVial, nodoBanco.id);
 
-    const candidatas = escuadron
+    const candidatas = mergeSort(escuadron
         .filter(moto => moto.estado === "patrullando")
         .map(function(moto) {
             const pos = moto.marcador.getLatLng();
@@ -84,8 +84,7 @@ function seleccionarUnidades(banco) {
                 nodoMoto: nodoMoto,
                 metros: nodoMoto.distancia + distancias.get(nodoMoto.id) + nodoBanco.distancia
             };
-        })
-        .sort((a, b) => a.metros - b.metros);
+        }), (a, b) => a.metros - b.metros);
 
     return { elegidas: candidatas.slice(0, UNIDADES_A_DESPACHAR), nodoBanco, previos };
 }
