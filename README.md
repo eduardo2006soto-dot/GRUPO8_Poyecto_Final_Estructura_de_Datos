@@ -31,8 +31,36 @@ Abrir `proyecto_unidad3/view/index.html` en el navegador (requiere internet para
 - **Clic derecho**: copia las coordenadas.
 - **Restablecer patrullas**: cancela el operativo y las unidades retoman su patrullaje desde donde están.
 
+## Búsquedas en archivos indexados
+
+`proyecto_unidad3/logic/busqueda_archivos.js` guarda los registros ordenados en disco y busca
+directamente sobre el archivo, sin cargarlo en memoria. Cada archivo indexado son dos archivos:
+
+- `<rutaBase>.dat`: un registro por línea (JSON), ordenados con el comparador.
+- `<rutaBase>.idx`: tabla índice binaria, 10 bytes por registro (posición y longitud en el `.dat`).
+
+```js
+const { crearComparador, generarRegistros } = require("./proyecto_unidad3/logic/registros.js");
+const archivos = require("./proyecto_unidad3/logic/busqueda_archivos.js");
+
+const cmp = crearComparador([{ campo: "id", dir: "asc" }]);
+const rutaBase = "datos_indexados/patrullas_50000";   // carpeta ignorada por git
+
+archivos.crearArchivoIndexado(generarRegistros(50000), cmp, rutaBase);
+
+const archivo = archivos.abrirArchivoIndexado(rutaBase);
+archivos.busquedaSecuencialArchivo(archivo, { id: 42000 }, cmp);   // O(n)
+archivos.busquedaBinariaArchivo(archivo, { id: 42000 }, cmp);      // O(log n)
+archivos.cerrarArchivoIndexado(archivo);
+```
+
+Ambas devuelven `{ encontrado, registro, indice, comparaciones, lecturas }`: lo mismo que las
+búsquedas en memoria, más `lecturas` (accesos a disco). También aceptan la ruta base en lugar
+del archivo abierto, pero entonces abren y cierran el archivo en cada búsqueda.
+
 ## Pruebas
 
 ```bash
 node --test proyecto_unidad3/tests/grafo.test.js
+node --test                                # todas, incluidas las de archivos indexados
 ```
