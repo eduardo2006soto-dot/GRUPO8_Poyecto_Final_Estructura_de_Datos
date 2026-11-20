@@ -4,7 +4,8 @@
   "description": "Proyecto final de Estructura de Datos. Simula 10 patrullas recorriendo sectores de Loja y,\r ante una alarma bancaria, despacha las 3 unidades más cercanas **por distancia de ruta**.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "benchmark:busquedas": "node benchmark_busquedas.js"
   },
   "repository": {
     "type": "git",
